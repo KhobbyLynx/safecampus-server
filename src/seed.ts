@@ -3,7 +3,12 @@ import bcrypt from 'bcryptjs';
 
 export async function seedDatabase() {
   try {
-    await sequelize.sync({ alter: true });
+    try {
+      await sequelize.sync({ alter: true });
+    } catch (syncError) {
+      console.warn('[seed]: Alter sync failed (common with SQLite schema changes). Attempting force sync...');
+      await sequelize.sync({ force: true });
+    }
     console.log('[seed]: Database synced');
 
     const hashedPassword = await bcrypt.hash('password123', 10);
