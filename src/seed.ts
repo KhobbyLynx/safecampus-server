@@ -1,9 +1,8 @@
-import { sequelize, Institution, User } from './models';
+import { sequelize, Institution, User, Hotspot } from './models';
 import bcrypt from 'bcryptjs';
 
 export async function seedDatabase() {
   try {
-    // Check if we already have data
     await sequelize.sync({ alter: true });
     console.log('[seed]: Database synced');
 
@@ -17,11 +16,30 @@ export async function seedDatabase() {
         slug: 'ug-legon',
         boundary: JSON.stringify({
           type: "Polygon",
-          coordinates: [[[-0.18, 5.65], [-0.19, 5.65], [-0.19, 5.66], [-0.18, 5.66], [-0.18, 5.65]]]
+          coordinates: [[
+            [-0.198, 5.642], [-0.198, 5.665], [-0.170, 5.665], [-0.170, 5.642], [-0.198, 5.642]
+          ]]
         }),
+        center_lat: 5.6505,
+        center_lng: -0.1870,
         zoom_level: 15
       }
     });
+
+    // UG Landmarks
+    const ugLandmarks = [
+      { label: 'Balme Library', zone: 'Central', lat: 5.6517, lng: -0.1866, intensity: 'landmark', types: 'Library, Study Area' },
+      { label: 'Legon Hall', zone: 'Residential', lat: 5.6530, lng: -0.1840, intensity: 'low', types: 'Hostel' },
+      { label: 'Night Market', zone: 'Social', lat: 5.6480, lng: -0.1890, intensity: 'medium', types: 'Food, Market' },
+      { label: 'Security Post (Main Gate)', zone: 'Security', lat: 5.6425, lng: -0.1875, intensity: 'landmark', types: 'Security, Gate' }
+    ];
+
+    for (const lm of ugLandmarks) {
+      await Hotspot.findOrCreate({
+        where: { institution_id: ug.id, label: lm.label },
+        defaults: { ...lm, institution_id: ug.id }
+      });
+    }
 
     await User.findOrCreate({
       where: { email: 'admin@ug.edu.gh' },
@@ -35,18 +53,6 @@ export async function seedDatabase() {
       }
     });
 
-    await User.findOrCreate({
-      where: { email: 'student@ug.edu.gh' },
-      defaults: {
-        first_name: 'Test',
-        last_name: 'Student',
-        password: hashedPassword,
-        role: 'STUDENT',
-        institution_id: ug.id,
-        status: 'ACTIVE'
-      }
-    });
-
     // ─── KNUST ────────────────────────────────────────────────────────────────
     const [knust] = await Institution.findOrCreate({
       where: { domain: 'knust.edu.gh' },
@@ -55,11 +61,30 @@ export async function seedDatabase() {
         slug: 'knust-kumasi',
         boundary: JSON.stringify({
           type: "Polygon",
-          coordinates: [[[-1.56, 6.67], [-1.57, 6.67], [-1.57, 6.68], [-1.56, 6.68], [-1.56, 6.67]]]
+          coordinates: [[
+            [-1.585, 6.662], [-1.585, 6.695], [-1.555, 6.695], [-1.555, 6.662], [-1.585, 6.662]
+          ]]
         }),
+        center_lat: 6.6745,
+        center_lng: -1.5715,
         zoom_level: 15
       }
     });
+
+    // KNUST Landmarks
+    const knustLandmarks = [
+      { label: 'Great Hall', zone: 'Central', lat: 6.6748, lng: -1.5720, intensity: 'landmark', types: 'Event, Administrative' },
+      { label: 'Unity Hall', zone: 'Residential', lat: 6.6780, lng: -1.5680, intensity: 'medium', types: 'Hostel' },
+      { label: 'Engineering Block', zone: 'Academic', lat: 6.6720, lng: -1.5750, intensity: 'low', types: 'Department' },
+      { label: 'Security HQ', zone: 'Security', lat: 6.6760, lng: -1.5700, intensity: 'landmark', types: 'Security, Police' }
+    ];
+
+    for (const lm of knustLandmarks) {
+      await Hotspot.findOrCreate({
+        where: { institution_id: knust.id, label: lm.label },
+        defaults: { ...lm, institution_id: knust.id }
+      });
+    }
 
     await User.findOrCreate({
       where: { email: 'admin@knust.edu.gh' },
@@ -95,7 +120,8 @@ export async function seedDatabase() {
       }
     });
 
-    console.log('[seed]: Seeding completed successfully.');
+    console.log('[seed]: Seeding completed successfully with boundaries and landmarks.');
+
     console.log('[seed]: Credentials (all use "password123"):');
     console.log('       - UG: admin@ug.edu.gh, student@ug.edu.gh');
     console.log('       - KNUST: admin@knust.edu.gh');
