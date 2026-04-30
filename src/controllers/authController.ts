@@ -88,8 +88,8 @@ export const login = async (req: Request, res: Response) => {
     // Set cookie
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Must be true for sameSite: 'none'
+      sameSite: 'none', // Required for cross-domain (Vercel to Render)
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
@@ -109,7 +109,11 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = (req: Request, res: Response) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none'
+  });
   res.json({ message: 'Logged out successfully' });
 };
 
