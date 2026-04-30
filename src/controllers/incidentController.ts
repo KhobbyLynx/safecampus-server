@@ -340,14 +340,18 @@ export const getIncidentStats = async (req: AuthRequest, res: Response) => {
     const personnelChangePercent = officersYesterday > 0 ? (newOfficersToday / officersYesterday * 100).toFixed(1) : (newOfficersToday > 0 ? "100.0" : "0.0");
     const studentChangePercent = studentsYesterday > 0 ? (newStudentsToday / studentsYesterday * 100).toFixed(1) : (newStudentsToday > 0 ? "100.0" : "0.0");
 
-    // Calculate real avg response time
+    const isPostgres = sequelize.getDialect() === 'postgres';
+    const timeDiffSql = isPostgres 
+      ? 'EXTRACT(EPOCH FROM (assigned_at - created_at))'
+      : "strftime('%s', assigned_at) - strftime('%s', created_at)";
+
     const assignedIncidents = await Incident.findAll({
       where: { 
         institution_id: institutionId,
         assigned_at: { [Op.ne]: null }
       },
       attributes: [
-        [fn('AVG', literal("strftime('%s', assigned_at) - strftime('%s', created_at)")), 'avgResponse']
+        [fn('AVG', literal(timeDiffSql)), 'avgResponse']
       ],
       raw: true
     });
@@ -458,14 +462,18 @@ export const getAnalytics = async (req: AuthRequest, res: Response) => {
       ? ((incidentsThisWeek - incidentsLastWeek) / incidentsLastWeek * 100).toFixed(1) 
       : (incidentsThisWeek > 0 ? "100.0" : "0.0");
 
-    // 5. Avg Response Time
+    const isPostgres = sequelize.getDialect() === 'postgres';
+    const timeDiffSql = isPostgres 
+      ? 'EXTRACT(EPOCH FROM (assigned_at - created_at))'
+      : "strftime('%s', assigned_at) - strftime('%s', created_at)";
+
     const assignedIncidents = await Incident.findAll({
       where: { 
         institution_id: institutionId,
         assigned_at: { [Op.ne]: null }
       },
       attributes: [
-        [fn('AVG', fn('strftime', '%s', col('assigned_at')) - fn('strftime', '%s', col('created_at'))), 'avgResponse']
+        [fn('AVG', literal(timeDiffSql)), 'avgResponse']
       ],
       raw: true
     });
