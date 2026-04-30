@@ -32,7 +32,7 @@ export async function seedDatabase() {
       last_name: 'Admin',
       email: 'admin@safecampus.edu',
       password: hashedPassword,
-      role: 'SYSTEM_ADMIN',
+      role: 'SUPER_ADMIN',
       institution_id: institution.id
     });
 
