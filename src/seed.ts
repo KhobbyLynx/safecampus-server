@@ -13,30 +13,39 @@ export async function seedDatabase() {
     await sequelize.sync({ alter: true });
     console.log('[seed]: Database synced');
 
-    // Create a Demo Institution
-    const institution = await Institution.create({
-      name: 'SafeCampus Demo University',
-      slug: 'demo-uni',
-      domain: 'safecampus.edu',
-      boundary: JSON.stringify({
-        type: "Polygon",
-        coordinates: [[[-0.18, 5.65], [-0.19, 5.65], [-0.19, 5.66], [-0.18, 5.66], [-0.18, 5.65]]]
-      }),
-      settings: JSON.stringify({ theme: 'default' })
+    // Use findOrCreate for the Institution to avoid duplicates
+    const [institution] = await Institution.findOrCreate({
+      where: { domain: 'safecampus.edu' },
+      defaults: {
+        name: 'SafeCampus Demo University',
+        slug: 'demo-uni',
+        boundary: JSON.stringify({
+          type: "Polygon",
+          coordinates: [[[-0.18, 5.65], [-0.19, 5.65], [-0.19, 5.66], [-0.18, 5.66], [-0.18, 5.65]]]
+        }),
+        zoom_level: 16
+      }
     });
 
-    // Create a Default Admin
+    // Use findOrCreate for the Default Admin
     const hashedPassword = await bcrypt.hash('admin123', 10);
-    await User.create({
-      first_name: 'System',
-      last_name: 'Admin',
-      email: 'admin@safecampus.edu',
-      password: hashedPassword,
-      role: 'SUPER_ADMIN',
-      institution_id: institution.id
+    const [user, created] = await User.findOrCreate({
+      where: { email: 'admin@safecampus.edu' },
+      defaults: {
+        first_name: 'System',
+        last_name: 'Admin',
+        password: hashedPassword,
+        role: 'SUPER_ADMIN',
+        institution_id: institution.id,
+        status: 'ACTIVE'
+      }
     });
 
-    console.log('[seed]: Seeding completed successfully. Created default admin: admin@safecampus.edu / admin123');
+    if (created) {
+      console.log('[seed]: Seeding completed successfully. Created default admin: admin@safecampus.edu / admin123');
+    } else {
+      console.log('[seed]: Admin user already exists. No new data created.');
+    }
   } catch (error) {
     console.error('[seed]: Failed to seed database', error);
   }
