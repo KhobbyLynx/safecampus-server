@@ -71,7 +71,7 @@ export const updateBuddyStatus = async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    const buddy = await Buddy.findByPk(id);
+    const buddy = await Buddy.findByPk(id as string);
     if (!buddy) {
       return res.status(404).json({ message: 'Buddy not found' });
     }
@@ -100,7 +100,7 @@ export const updateBuddyStatus = async (req: AuthRequest, res: Response) => {
 export const removeBuddy = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const buddy = await Buddy.findByPk(id);
+    const buddy = await Buddy.findByPk(id as string);
     
     if (!buddy) {
       return res.status(404).json({ message: 'Buddy not found' });

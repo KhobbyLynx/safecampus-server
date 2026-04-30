@@ -43,7 +43,7 @@ export const addContact = async (req: AuthRequest, res: Response) => {
 export const deleteContact = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const contact = await EmergencyContact.findByPk(id);
+    const contact = await EmergencyContact.findByPk(id as string);
 
     if (!contact) {
       return res.status(404).json({ message: 'Contact not found' });
