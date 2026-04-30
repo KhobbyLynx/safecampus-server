@@ -35,8 +35,32 @@ app.use((req, res, next) => {
   next();
 });
 
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:3000',
+  'https://safecampus.onrender.com',
+  'https://safecampus-eight.vercel.app', // Adding likely Vercel URL
+  /\.vercel\.app$/ // Allow any vercel.app subdomains
+];
+
 app.use(cors({
-  origin: true, // Allow all origins in production for now to fix Network Error
+  origin: (origin, callback) => {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return allowed === origin;
+    });
+
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS]: Origin ${origin} blocked`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
