@@ -126,8 +126,6 @@ export async function seedDatabase() {
     console.log('       - UG: admin@ug.edu.gh, student@ug.edu.gh');
     console.log('       - KNUST: admin@knust.edu.gh');
     console.log('       - System: admin@safecampus.edu');
-
-    }
   } catch (error) {
     console.error('[seed]: Failed to seed database', error);
   }
