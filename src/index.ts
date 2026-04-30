@@ -13,6 +13,7 @@ import alertRoutes from './routes/alertRoutes';
 import buddyRoutes from './routes/buddyRoutes';
 import contactRoutes from './routes/contactRoutes';
 import { initSocket } from './lib/socket';
+import { seedDatabase } from './seed';
 
 dotenv.config();
 
@@ -26,9 +27,16 @@ initSocket(httpServer);
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000'],
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://localhost:3000', 'https://safecampus.onrender.com'],
   credentials: true
 }));
+
+// Basic Request Logger
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next();
+});
+
 app.use(cookieParser());
 app.use(express.json());
 
@@ -41,21 +49,38 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/buddies', buddyRoutes);
 app.use('/api/contacts', contactRoutes);
 
-// Base Route
-app.get('/', (req, res) => {
+// Enhanced Health & Connectivity Route
+app.get('/', async (req, res) => {
+  let dbStatus = 'connected';
+  try {
+    await sequelize.authenticate();
+  } catch (err) {
+    dbStatus = 'disconnected';
+  }
+
   res.json({
     message: 'SafeCampus API is running',
     version: '1.0.0',
-    status: 'healthy'
+    timestamp: new Date().toISOString(),
+    status: dbStatus === 'connected' ? 'healthy' : 'degraded',
+    checks: {
+      database: dbStatus,
+      env: process.env.NODE_ENV || 'development'
+    }
   });
 });
 
-// Sync Database and Start Server
-sequelize.sync().then(() => {
+// Sync Database, Auto-Seed, and Start Server
+sequelize.sync().then(async () => {
   console.log('[db]: Database synced');
+  
+  // Auto-seed if needed
+  await seedDatabase();
+
   httpServer.listen(PORT, () => {
     console.log(`[server]: Server is running at http://localhost:${PORT}`);
   });
 }).catch(err => {
   console.error('[db]: Failed to sync database', err);
 });
+
