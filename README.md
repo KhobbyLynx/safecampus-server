@@ -37,12 +37,12 @@ backend/
 ## 🔑 Key Features & API Endpoints
 
 ### 🔐 Authentication (`/api/auth`)
-| Endpoint | Method | Description |
-| :--- | :--- | :--- |
-| `/register` | `POST` | Create a new user account |
-| `/login` | `POST` | Authenticate and receive access token |
-| `/logout` | `POST` | Invalidate current session |
-| `/me` | `GET` | Get current authenticated user profile |
+| Endpoint    | Method | Description                            |
+| :---------- | :----- | :------------------------------------- |
+| `/register` | `POST` | Create a new user account              |
+| `/login`    | `POST` | Authenticate and receive access token  |
+| `/logout`   | `POST` | Invalidate current session             |
+| `/me`       | `GET`  | Get current authenticated user profile |
 
 ### 🚨 Incident Management (`/api/incidents`)
 - **GET** `/`: Fetch all incidents (Admin/Security only)
@@ -109,4 +109,4 @@ The backend emits and listens for several real-time events:
 ---
 
 ## 🛡️ License
-This project is proprietary and confidential. &copy; 2026 Lynxnet Safecampus Team.
+This project is proprietary and confidential. &copy; 2026 Lynxnet Innovations.
