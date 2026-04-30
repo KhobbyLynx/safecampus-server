@@ -1,5 +1,6 @@
 import { Response } from 'express';
-import { Incident, User, Institution } from '../models';
+import { Op } from 'sequelize';
+import { Incident, User, Institution, sequelize } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import { emitToInstitution } from '../lib/socket';
 import { sendEmail } from '../lib/email';
@@ -389,7 +390,7 @@ export const getIncidentStats = async (req: AuthRequest, res: Response) => {
 export const getAnalytics = async (req: AuthRequest, res: Response) => {
   try {
     const institutionId = req.user?.institutionId;
-    const { Op, fn, col } = require('sequelize');
+    const { Op, fn, col, literal } = require('sequelize');
     const now = new Date();
 
     // 1. Status Breakdown
