@@ -8,7 +8,7 @@ The robust, real-time backbone of the SafeCampus platform, providing secure auth
 
 - **Runtime:** Node.js (v18+)
 - **Framework:** Express.js with TypeScript
-- **Database:** Sequelize ORM (SQLite for local, MySQL compatible)
+- **Database:** Sequelize ORM (SQLite for local, PostgreSQL for production)
 - **Real-time:** Socket.io for instant alerts and coordination
 - **Security:** JWT Authentication, Bcrypt password hashing, Helmet, and CORS
 - **Validation:** Zod for schema-based request validation
