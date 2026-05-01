@@ -18,6 +18,7 @@ class Incident extends Model {
   public assignee_id?: string;
   public institution_id!: string;
   public assigned_at?: Date;
+  public remarks?: string;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 
@@ -95,11 +96,18 @@ Incident.init({
   assigned_at: {
     type: DataTypes.DATE,
     allowNull: true,
+  },
+  remarks: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   }
 }, {
   sequelize,
   modelName: 'Incident',
   tableName: 'incidents',
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 // Associations

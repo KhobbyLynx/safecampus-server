@@ -8,13 +8,14 @@ class User extends Model {
   public password!: string;
   public first_name!: string;
   public last_name!: string;
-  public role!: 'SUPER_ADMIN' | 'SCHOOL_ADMIN' | 'SECURITY' | 'STUDENT';
+  public role!: 'SUPER_ADMIN' | 'SCHOOL_ADMIN' | 'SECURITY' | 'STUDENT' | 'STAFF';
   public institution_id!: string;
   public preferences!: any;
   public reset_token!: string | null;
   public reset_token_expires!: Date | null;
   public status!: 'ACTIVE' | 'PENDING' | 'INACTIVE';
   public badge_number?: string;
+  public recovery_email?: string;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -46,7 +47,7 @@ User.init({
     allowNull: false,
   },
   role: {
-    type: DataTypes.ENUM('SUPER_ADMIN', 'SCHOOL_ADMIN', 'SECURITY', 'STUDENT'),
+    type: DataTypes.ENUM('SUPER_ADMIN', 'SCHOOL_ADMIN', 'SECURITY', 'STUDENT', 'STAFF'),
     defaultValue: 'STUDENT',
   },
   institution_id: {
@@ -90,11 +91,21 @@ User.init({
   badge_number: {
     type: DataTypes.STRING,
     allowNull: true,
+  },
+  recovery_email: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      isEmail: true,
+    }
   }
 }, {
   sequelize,
   modelName: 'User',
   tableName: 'users',
+  underscored: true,
+  createdAt: 'created_at',
+  updatedAt: 'updated_at'
 });
 
 // Associations
