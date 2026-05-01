@@ -91,18 +91,34 @@ export const getProfile = async (req: AuthRequest, res: Response) => {
 export const updateProfile = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    const { firstName, lastName, preferences } = req.body;
+    const { firstName, lastName, email, recovery_email, preferences } = req.body;
     
     const user = await User.findByPk(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    await user.update({
+    const updateData: any = {
       first_name: firstName,
       last_name: lastName,
       preferences: preferences || user.preferences
-    });
+    };
+
+    // Only SUPER_ADMIN can change their primary email via this route
+    if (email && user.role === 'SUPER_ADMIN') {
+      // Check if email is already taken by another user
+      const existing = await User.findOne({ where: { email } });
+      if (existing && existing.id !== user.id) {
+        return res.status(400).json({ message: 'Email is already in use by another account' });
+      }
+      updateData.email = email;
+    }
+
+    if (recovery_email !== undefined) {
+      updateData.recovery_email = recovery_email;
+    }
+    
+    await user.update(updateData);
     
     res.json({
       id: user.id,
@@ -111,6 +127,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       last_name: user.last_name,
       role: user.role,
       institution_id: user.institution_id,
+      recovery_email: user.recovery_email,
       preferences: user.preferences
     });
   } catch (error: any) {

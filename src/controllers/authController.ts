@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { User, Institution } from '../models';
 import { sendEmail } from '../lib/email';
 import { emitToInstitution } from '../lib/socket';
+import { Op } from 'sequelize';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_key_change_me';
 
@@ -120,7 +121,14 @@ export const logout = (req: Request, res: Response) => {
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ 
+      where: { 
+        [Op.or]: [
+          { email },
+          { recovery_email: email }
+        ]
+      } 
+    });
     
     if (!user) {
       // For security, don't reveal if user exists. Just say email sent.
@@ -160,7 +168,10 @@ export const resetPassword = async (req: Request, res: Response) => {
     
     const user = await User.findOne({ 
       where: { 
-        email, 
+        [Op.or]: [
+          { email },
+          { recovery_email: email }
+        ],
         reset_token: code 
       } 
     });

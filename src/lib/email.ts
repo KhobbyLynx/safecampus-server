@@ -122,7 +122,9 @@ export const sendEmail = async ({
   title,
   message,
   actionText,
-  actionUrl
+  actionUrl,
+  attachments,
+  isRawHtml
 }: {
   to: string;
   subject: string;
@@ -130,8 +132,10 @@ export const sendEmail = async ({
   message: string;
   actionText?: string;
   actionUrl?: string;
+  attachments?: { filename: string; content: string }[];
+  isRawHtml?: boolean;
 }) => {
-  const html = createEmailTemplate(title, message, actionText, actionUrl);
+  const html = isRawHtml ? message : createEmailTemplate(title, message, actionText, actionUrl);
 
   // If no Resend API key, log to console (useful for development)
   if (!resend) {
@@ -151,6 +155,7 @@ export const sendEmail = async ({
       to: [to],
       subject,
       html,
+      attachments,
     });
     
     if (data.error) {
