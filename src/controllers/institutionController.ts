@@ -28,8 +28,11 @@ export const createInstitution = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'At least one campus landmark is required.' });
     }
 
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
     const institution = await Institution.create({
       name,
+      slug,
       domain,
       logo_url: logoUrl,
       center_lat,
@@ -132,6 +135,16 @@ export const updateInstitution = async (req: Request, res: Response) => {
       }
     }
     
+    // Notify all connected clients in this institution to refresh their map data
+    const { emitToInstitution } = require('../lib/socket');
+    emitToInstitution(id, 'institution-updated', {
+      id,
+      name: institution.name,
+      boundary: institution.boundary,
+      center_lat: institution.center_lat,
+      center_lng: institution.center_lng
+    });
+
     res.json(institution);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
