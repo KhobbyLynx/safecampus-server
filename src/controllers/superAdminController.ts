@@ -11,7 +11,7 @@ export const getSystemStats = async (req: Request, res: Response) => {
       Institution.count({ where: { domain: { [Op.ne]: 'safecampus.edu' } } }),
       User.count(),
       Incident.count(),
-      Incident.count({ where: { status: 'ACTIVE' } }),
+      Incident.count({ where: { status: { [Op.notIn]: ['RESOLVED', 'DISMISSED'] } } }),
       Institution.count({ 
         where: { 
           domain: { [Op.ne]: 'safecampus.edu' },
