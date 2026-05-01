@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
 import { Institution, Hotspot } from '../models';
+import { Op } from 'sequelize';
 
 export const getAllInstitutions = async (req: Request, res: Response) => {
   try {
     const institutions = await Institution.findAll({
+      where: {
+        domain: { [Op.ne]: 'safecampus.edu' }
+      },
       attributes: ['id', 'name', 'domain', 'logo_url', 'center_lat', 'center_lng', 'zoom_level', 'boundary']
     });
     res.json(institutions);
@@ -15,6 +19,15 @@ export const getAllInstitutions = async (req: Request, res: Response) => {
 export const createInstitution = async (req: Request, res: Response) => {
   try {
     const { name, domain, logoUrl, center_lat, center_lng, zoom_level, boundary, hotspots, density } = req.body;
+
+    if (!boundary || !Array.isArray(boundary) || boundary.length < 3) {
+      return res.status(400).json({ message: 'Campus perimeter boundary (minimum 3 points) is required.' });
+    }
+    
+    if (!hotspots || !Array.isArray(hotspots) || hotspots.length === 0) {
+      return res.status(400).json({ message: 'At least one campus landmark is required.' });
+    }
+
     const institution = await Institution.create({
       name,
       domain,
