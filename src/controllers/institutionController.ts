@@ -57,6 +57,20 @@ export const createInstitution = async (req: Request, res: Response) => {
       }
     }
 
+    // Notify Super Admins
+    const { getIO } = require('../lib/socket');
+    try {
+      const io = getIO();
+      io.to('super-admin-room').emit('notification', {
+        type: 'NEW_INSTITUTION',
+        title: 'New Institution Onboarded',
+        message: `${name} has just joined SafeCampus!`,
+        data: { institutionId: institution.id }
+      });
+    } catch (e) {
+      console.warn('Socket not initialized, skipping super-admin notification');
+    }
+
     res.status(201).json(institution);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

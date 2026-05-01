@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { Alert } from '../models';
 import { AuthRequest } from '../middleware/auth';
+import { emitToInstitution } from '../lib/socket';
 
 export const getAllAlerts = async (req: AuthRequest, res: Response) => {
   try {
@@ -35,8 +36,13 @@ export const createAlert = async (req: AuthRequest, res: Response) => {
       expires_at: expiresAt
     });
 
-    // Here we would typically trigger WebSockets or Push Notifications
-    // io.to(institutionId).emit('new_alert', alert);
+    // Broadcast to everyone in the institution
+    emitToInstitution(institutionId, 'notification', {
+      type: 'ALERT',
+      title: title,
+      message: description || 'New campus alert issued.',
+      data: { alertId: alert.id }
+    });
 
     res.status(201).json(alert);
   } catch (error: any) {

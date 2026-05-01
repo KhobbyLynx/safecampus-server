@@ -6,6 +6,10 @@ class Buddy extends Model {
   public user_id!: string;
   public buddy_id!: string;
   public status!: 'PENDING' | 'ACCEPTED' | 'SHARING';
+  public user_is_sharing!: boolean;
+  public buddy_is_sharing!: boolean;
+  public requester_info?: any;
+  public buddy_info?: any;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -28,6 +32,14 @@ Buddy.init(
     status: {
       type: DataTypes.ENUM('PENDING', 'ACCEPTED', 'SHARING'),
       defaultValue: 'PENDING',
+    },
+    user_is_sharing: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    buddy_is_sharing: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {

@@ -120,10 +120,30 @@ sequelize.sync().then(async () => {
     } catch (e: any) {
       console.log('[db]: Postgres remarks column patch skipped or failed:', e.message);
     }
+
+    try {
+      await sequelize.query(`ALTER TABLE buddies ADD COLUMN user_is_sharing BOOLEAN DEFAULT FALSE;`);
+      console.log('[db]: Postgres table buddies patched with user_is_sharing column');
+    } catch (e: any) {}
+
+    try {
+      await sequelize.query(`ALTER TABLE buddies ADD COLUMN buddy_is_sharing BOOLEAN DEFAULT FALSE;`);
+      console.log('[db]: Postgres table buddies patched with buddy_is_sharing column');
+    } catch (e: any) {}
+
+    try {
+      await sequelize.query(`ALTER TABLE users ADD COLUMN last_lat FLOAT;`);
+      console.log('[db]: Postgres table users patched with last_lat column');
+    } catch (e: any) {}
+
+    try {
+      await sequelize.query(`ALTER TABLE users ADD COLUMN last_lng FLOAT;`);
+      console.log('[db]: Postgres table users patched with last_lng column');
+    } catch (e: any) {}
   }
   
   // Auto-seed if needed
-  await seedDatabase();
+  // await seedDatabase();
 
   httpServer.listen(PORT, () => {
     console.log(`[server]: Server is running at http://localhost:${PORT}`);

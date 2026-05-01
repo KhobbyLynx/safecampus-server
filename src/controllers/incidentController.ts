@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { Op } from 'sequelize';
 import { Incident, User, Institution, EmergencyContact, sequelize } from '../models';
 import { AuthRequest } from '../middleware/auth';
-import { emitToInstitution } from '../lib/socket';
+import { emitToInstitution, emitToUser } from '../lib/socket';
 import { sendEmail } from '../lib/email';
 import { sendSMS } from '../lib/sms';
 
@@ -238,6 +238,23 @@ export const updateIncidentStatus = async (req: AuthRequest, res: Response) => {
     incident.status = status;
     await incident.save();
 
+    // Notify the reporter and everyone in the institution
+    emitToInstitution(incident.institution_id, 'notification', {
+      type: 'INCIDENT_UPDATE',
+      title: 'Incident Status Updated',
+      message: `Incident #${incident.id.slice(0, 8)} status changed to ${status}.`,
+      data: { incidentId: incident.id, status }
+    });
+
+    if (incident.reporter_id) {
+      emitToUser(incident.reporter_id, 'notification', {
+        type: 'INCIDENT_UPDATE',
+        title: 'Your Report was Updated',
+        message: `The status of your report "${incident.title}" is now ${status}.`,
+        data: { incidentId: incident.id, status }
+      });
+    }
+
     res.json(incident);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -262,6 +279,14 @@ export const updateIncidentLocation = async (req: AuthRequest, res: Response) =>
     incident.location_lng = lng;
     incident.location_name = locationName;
     await incident.save();
+
+    // Notify about location update
+    emitToInstitution(incident.institution_id, 'notification', {
+      type: 'INCIDENT_LOCATION_UPDATE',
+      title: 'Incident Location Updated',
+      message: `The location for incident #${incident.id.slice(0, 8)} has been updated.`,
+      data: { incidentId: incident.id, lat, lng }
+    });
 
     res.json(incident);
   } catch (error: any) {
@@ -291,6 +316,16 @@ export const updateIncidentRemarks = async (req: AuthRequest, res: Response) => 
     incident.remarks = remarks;
     await incident.save();
 
+    // Notify reporter about new remarks if they exist
+    if (incident.reporter_id) {
+       emitToUser(incident.reporter_id, 'notification', {
+        type: 'INCIDENT_REMARK',
+        title: 'New Update on your Report',
+        message: `An officer added a remark to your incident report: "${remarks.slice(0, 50)}..."`,
+        data: { incidentId: incident.id }
+      });
+    }
+
     res.json(incident);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -318,6 +353,22 @@ export const assignIncident = async (req: AuthRequest, res: Response) => {
       if (incident.status === 'PENDING') {
         incident.status = 'INVESTIGATING';
       }
+
+      // Notify the officer
+      emitToUser(assignee_id, 'notification', {
+        type: 'INCIDENT_ASSIGNED',
+        title: 'New Incident Assigned',
+        message: `You have been assigned to incident #${incident.id.slice(0, 8)}.`,
+        data: { incidentId: incident.id }
+      });
+
+      // Notify the institution (admins)
+      emitToInstitution(incident.institution_id, 'notification', {
+        type: 'INCIDENT_ASSIGNED',
+        title: 'Incident Assigned',
+        message: `Incident #${incident.id.slice(0, 8)} assigned to a security officer.`,
+        data: { incidentId: incident.id }
+      });
     }
     await incident.save();
 

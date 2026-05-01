@@ -16,6 +16,8 @@ class User extends Model {
   public status!: 'ACTIVE' | 'PENDING' | 'INACTIVE';
   public badge_number?: string;
   public recovery_email?: string;
+  public last_lat?: number | null;
+  public last_lng?: number | null;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 }
@@ -98,7 +100,15 @@ User.init({
     validate: {
       isEmail: true,
     }
-  }
+  },
+  last_lat: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
+  last_lng: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+  },
 }, {
   sequelize,
   modelName: 'User',
