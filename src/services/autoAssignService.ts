@@ -20,7 +20,7 @@ export const startAutoAssignWorker = () => {
       const now = new Date();
 
       for (const incident of unassignedIncidents) {
-        const createdAt = new Date(incident.created_at || incident.createdAt);
+        const createdAt = new Date(incident.created_at);
         const elapsedMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
 
         let shouldAutoAssign = false;
