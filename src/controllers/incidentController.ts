@@ -1,9 +1,10 @@
 import { Response } from 'express';
 import { Op } from 'sequelize';
-import { Incident, User, Institution, sequelize } from '../models';
+import { Incident, User, Institution, EmergencyContact, sequelize } from '../models';
 import { AuthRequest } from '../middleware/auth';
 import { emitToInstitution } from '../lib/socket';
 import { sendEmail } from '../lib/email';
+import { sendSMS } from '../lib/sms';
 
 export const createIncident = async (req: AuthRequest, res: Response) => {
   try {
@@ -100,7 +101,7 @@ export const createSOSIncident = async (req: AuthRequest, res: Response) => {
       reporter_name: reporterName
     });
 
-    // Notify all active security personnel via email
+    // Notify all active security personnel and Emergency Contacts
     try {
       const securityPersonnel = await User.findAll({
         where: {
@@ -113,7 +114,7 @@ export const createSOSIncident = async (req: AuthRequest, res: Response) => {
 
       const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
       
-      // Send emails in parallel
+      // Send security emails
       await Promise.all(securityPersonnel.map(person => 
         sendEmail({
           to: person.email,
@@ -124,8 +125,24 @@ export const createSOSIncident = async (req: AuthRequest, res: Response) => {
           actionUrl: `${FRONTEND_URL}/security/dashboard`
         }).catch(err => console.error(`Failed to send SOS email to ${person.email}:`, err))
       ));
+
+      // Notify Emergency Contacts
+      if (req.user?.id) {
+        const contacts = await EmergencyContact.findAll({
+          where: { user_id: req.user.id }
+        });
+
+        if (contacts.length > 0) {
+          await Promise.all(contacts.map(contact => 
+            sendSMS(
+              contact.phone,
+              `URGENT SOS: ${reporterName} requires immediate assistance at ${locationName || 'Unknown Location'}. View: ${FRONTEND_URL}/map?incident=${incident.id}`
+            ).catch(err => console.error(`Failed to send SMS to ${contact.name}:`, err))
+          ));
+        }
+      }
     } catch (error) {
-      console.error('Failed to process SOS email notifications:', error);
+      console.error('Failed to process SOS notifications:', error);
     }
 
     res.status(201).json(incident);
@@ -146,7 +163,9 @@ export const getMyIncidents = async (req: AuthRequest, res: Response) => {
     const andConditions: any[] = [{ institution_id: institutionId }];
 
     // Role-based visibility
-    if (req.user?.role === 'SECURITY') {
+    if (req.user?.role === 'STUDENT') {
+      andConditions.push({ reporter_id: req.user.id });
+    } else if (req.user?.role === 'SECURITY') {
       andConditions.push({
         [Op.or]: [
           { assignee_id: req.user.id },
@@ -217,6 +236,59 @@ export const updateIncidentStatus = async (req: AuthRequest, res: Response) => {
     }
 
     incident.status = status;
+    await incident.save();
+
+    res.json(incident);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateIncidentLocation = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { lat, lng, locationName } = req.body;
+
+    const incident = await Incident.findByPk(id as string);
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    if (incident.institution_id !== req.user?.institutionId && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    incident.location_lat = lat;
+    incident.location_lng = lng;
+    incident.location_name = locationName;
+    await incident.save();
+
+    res.json(incident);
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const updateIncidentRemarks = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { remarks } = req.body;
+
+    const incident = await Incident.findByPk(id as string);
+    if (!incident) {
+      return res.status(404).json({ message: 'Incident not found' });
+    }
+
+    if (incident.institution_id !== req.user?.institutionId && req.user?.role !== 'SUPER_ADMIN') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Only assignee or admins can add remarks
+    if (incident.assignee_id !== req.user?.id && !['SCHOOL_ADMIN', 'SUPER_ADMIN'].includes(req.user?.role as string)) {
+      return res.status(403).json({ message: 'Only the assigned officer or an admin can update remarks' });
+    }
+
+    incident.remarks = remarks;
     await incident.save();
 
     res.json(incident);

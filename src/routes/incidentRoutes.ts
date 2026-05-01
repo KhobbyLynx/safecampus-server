@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createIncident, createSOSIncident, getMyIncidents, updateIncidentStatus, getIncidentStats, getAnalytics, assignIncident, getStudentReports } from '../controllers/incidentController';
+import { createIncident, createSOSIncident, getMyIncidents, updateIncidentStatus, getIncidentStats, getAnalytics, assignIncident, getStudentReports, updateIncidentLocation, updateIncidentRemarks } from '../controllers/incidentController';
 import { authenticate, authorize } from '../middleware/auth';
 
 const router = Router();
@@ -25,5 +25,7 @@ router.post('/sos', authenticate, createSOSIncident);
 router.get('/', authenticate, getMyIncidents);
 router.patch('/:id/status', authenticate, authorize('SCHOOL_ADMIN', 'SECURITY', 'SUPER_ADMIN'), updateIncidentStatus);
 router.patch('/:id/assign', authenticate, authorize('SCHOOL_ADMIN', 'SECURITY', 'SUPER_ADMIN'), assignIncident);
+router.patch('/:id/location', authenticate, authorize('SCHOOL_ADMIN', 'SECURITY', 'SUPER_ADMIN'), updateIncidentLocation);
+router.patch('/:id/remarks', authenticate, authorize('SCHOOL_ADMIN', 'SECURITY', 'SUPER_ADMIN'), updateIncidentRemarks);
 
 export default router;

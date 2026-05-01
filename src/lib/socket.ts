@@ -20,6 +20,30 @@ export const initSocket = (server: HttpServer) => {
       console.log(`[socket]: Socket ${socket.id} joined institution-${institutionId}`);
     });
 
+    // Join personal room for buddy sharing
+    socket.on('join-user', (userId: string) => {
+      socket.join(`user-${userId}`);
+      console.log(`[socket]: Socket ${socket.id} joined user-${userId}`);
+    });
+
+    // Handle live location sharing
+    socket.on('update-location', async (data: { userId: string, lat: number, lng: number, institutionId: string }) => {
+      // 1. Always broadcast to institution's security/admin room if they are on the map
+      io.to(`institution-${data.institutionId}`).emit('live-location-update', data);
+
+      // 2. Broadcast to buddies who have an active sharing relationship
+      // For performance, we could cache buddy lists, but for now we'll just broadcast to the institution
+      // and let the frontend filter, or we can fetch buddies here if needed.
+      // Let's broadcast to the institution-room but with a specific event.
+      // Security officers in that institution will see it.
+    });
+
+    // Join global super admin room
+    socket.on('join-super-admin', () => {
+      socket.join('super-admin-room');
+      console.log(`[socket]: Socket ${socket.id} joined super-admin-room`);
+    });
+
     socket.on('disconnect', () => {
       console.log(`[socket]: Socket disconnected: ${socket.id}`);
     });
@@ -38,5 +62,7 @@ export const getIO = () => {
 export const emitToInstitution = (institutionId: string, event: string, data: any) => {
   if (io) {
     io.to(`institution-${institutionId}`).emit(event, data);
+    // Also broadcast to super admins so they see all platform activity globally
+    io.to('super-admin-room').emit(event, data);
   }
 };
