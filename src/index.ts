@@ -12,8 +12,11 @@ import userRoutes from './routes/userRoutes';
 import alertRoutes from './routes/alertRoutes';
 import buddyRoutes from './routes/buddyRoutes';
 import contactRoutes from './routes/contactRoutes';
+import superAdminRoutes from './routes/superAdminRoutes';
 import { initSocket } from './lib/socket';
 import { seedDatabase } from './seed';
+import { startAutoAssignWorker } from './services/autoAssignService';
+import { startReportGeneratorWorker } from './services/reportService';
 
 dotenv.config();
 
@@ -75,6 +78,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/buddies', buddyRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/admin', superAdminRoutes);
 
 // Enhanced Health & Connectivity Route
 app.get('/', async (req, res) => {
@@ -100,12 +104,32 @@ app.get('/', async (req, res) => {
 // Sync Database, Auto-Seed, and Start Server
 sequelize.sync().then(async () => {
   console.log('[db]: Database synced');
+
+  // Safely patch the ENUM in Postgres to accept 'STAFF' without breaking changes
+  if (sequelize.getDialect() === 'postgres') {
+    try {
+      await sequelize.query(`ALTER TYPE "enum_Users_role" ADD VALUE IF NOT EXISTS 'STAFF';`);
+      console.log('[db]: Postgres ENUM enum_Users_role patched with STAFF');
+    } catch (e: any) {
+      // Ignored
+    }
+
+    try {
+      await sequelize.query(`ALTER TABLE incidents ADD COLUMN remarks TEXT;`);
+      console.log('[db]: Postgres table incidents patched with remarks column');
+    } catch (e: any) {
+      console.log('[db]: Postgres remarks column patch skipped or failed:', e.message);
+    }
+  }
   
   // Auto-seed if needed
   await seedDatabase();
 
   httpServer.listen(PORT, () => {
     console.log(`[server]: Server is running at http://localhost:${PORT}`);
+    startAutoAssignWorker();
+    startReportGeneratorWorker();
+    console.log('[server]: Auto-assign & Report workers started');
   });
 }).catch(err => {
   console.error('[db]: Failed to sync database', err);

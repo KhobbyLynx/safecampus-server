@@ -19,12 +19,9 @@ export async function seedDatabase() {
       defaults: {
         name: 'University of Ghana',
         slug: 'ug-legon',
-        boundary: JSON.stringify({
-          type: "Polygon",
-          coordinates: [[
-            [-0.198, 5.642], [-0.198, 5.665], [-0.170, 5.665], [-0.170, 5.642], [-0.198, 5.642]
-          ]]
-        }),
+        boundary: [
+          [5.642, -0.198], [5.665, -0.198], [5.665, -0.170], [5.642, -0.170], [5.642, -0.198]
+        ],
         center_lat: 5.6505,
         center_lng: -0.1870,
         zoom_level: 15
@@ -58,18 +55,40 @@ export async function seedDatabase() {
       }
     });
 
+
+    await User.findOrCreate({
+      where: { email: 'student@ug.edu.gh' },
+      defaults: {
+        first_name: 'John',
+        last_name: 'Doe',
+        password: hashedPassword,
+        role: 'STUDENT',
+        institution_id: ug.id,
+        status: 'ACTIVE'
+      }
+    });
+
+    await User.findOrCreate({
+      where: { email: 'security@ug.edu.gh' },
+      defaults: {
+        first_name: 'UG',
+        last_name: 'Security',
+        password: hashedPassword,
+        role: 'SECURITY',
+        institution_id: ug.id,
+        status: 'ACTIVE'
+      }
+    });
+
     // ─── KNUST ────────────────────────────────────────────────────────────────
     const [knust] = await Institution.findOrCreate({
       where: { domain: 'knust.edu.gh' },
       defaults: {
         name: 'KNUST',
         slug: 'knust-kumasi',
-        boundary: JSON.stringify({
-          type: "Polygon",
-          coordinates: [[
-            [-1.585, 6.662], [-1.585, 6.695], [-1.555, 6.695], [-1.555, 6.662], [-1.585, 6.662]
-          ]]
-        }),
+        boundary: [
+          [6.662, -1.585], [6.695, -1.585], [6.695, -1.555], [6.662, -1.555], [6.662, -1.585]
+        ],
         center_lat: 6.6745,
         center_lng: -1.5715,
         zoom_level: 15
@@ -98,6 +117,19 @@ export async function seedDatabase() {
         last_name: 'Admin',
         password: hashedPassword,
         role: 'SCHOOL_ADMIN',
+        institution_id: knust.id,
+        status: 'ACTIVE'
+      }
+    });
+
+
+    await User.findOrCreate({
+      where: { email: 'student@knust.edu.gh' },
+      defaults: {
+        first_name: 'Jane',
+        last_name: 'Smith',
+        password: hashedPassword,
+        role: 'STUDENT',
         institution_id: knust.id,
         status: 'ACTIVE'
       }
