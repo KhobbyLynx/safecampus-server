@@ -51,7 +51,7 @@ app.use(cors({
   origin: (origin, callback) => {
     // allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed instanceof RegExp) return allowed.test(origin);
       return allowed === origin;
@@ -124,26 +124,26 @@ sequelize.sync().then(async () => {
     try {
       await sequelize.query(`ALTER TABLE buddies ADD COLUMN user_is_sharing BOOLEAN DEFAULT FALSE;`);
       console.log('[db]: Postgres table buddies patched with user_is_sharing column');
-    } catch (e: any) {}
+    } catch (e: any) { }
 
     try {
       await sequelize.query(`ALTER TABLE buddies ADD COLUMN buddy_is_sharing BOOLEAN DEFAULT FALSE;`);
       console.log('[db]: Postgres table buddies patched with buddy_is_sharing column');
-    } catch (e: any) {}
+    } catch (e: any) { }
 
     try {
       await sequelize.query(`ALTER TABLE users ADD COLUMN last_lat FLOAT;`);
       console.log('[db]: Postgres table users patched with last_lat column');
-    } catch (e: any) {}
+    } catch (e: any) { }
 
     try {
       await sequelize.query(`ALTER TABLE users ADD COLUMN last_lng FLOAT;`);
       console.log('[db]: Postgres table users patched with last_lng column');
-    } catch (e: any) {}
+    } catch (e: any) { }
   }
-  
+
   // Auto-seed if needed
-  // await seedDatabase();
+  await seedDatabase();
 
   httpServer.listen(PORT, () => {
     console.log(`[server]: Server is running at http://localhost:${PORT}`);
