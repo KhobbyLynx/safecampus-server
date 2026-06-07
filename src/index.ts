@@ -13,7 +13,9 @@ import alertRoutes from './routes/alertRoutes';
 import buddyRoutes from './routes/buddyRoutes';
 import contactRoutes from './routes/contactRoutes';
 import superAdminRoutes from './routes/superAdminRoutes';
+import uploadRoutes from './routes/uploadRoutes';
 import { initSocket } from './lib/socket';
+import path from 'path';
 import { seedDatabase } from './seed';
 import { startAutoAssignWorker } from './services/autoAssignService';
 import { startReportGeneratorWorker } from './services/reportService';
@@ -79,6 +81,10 @@ app.use('/api/alerts', alertRoutes);
 app.use('/api/buddies', buddyRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/admin', superAdminRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Serve static uploads
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
 
 // Enhanced Health & Connectivity Route
 app.get('/', async (req, res) => {

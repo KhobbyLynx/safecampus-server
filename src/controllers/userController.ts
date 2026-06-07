@@ -115,7 +115,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
     }
 
     if (recovery_email !== undefined) {
-      updateData.recovery_email = recovery_email;
+      updateData.recovery_email = recovery_email === '' ? null : recovery_email;
     }
     
     await user.update(updateData);

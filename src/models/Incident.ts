@@ -15,10 +15,12 @@ class Incident extends Model {
   public location_lng!: number;
   public is_anonymous!: boolean;
   public reporter_id?: string;
+  public submitted_by_id?: string;
   public assignee_id?: string;
   public institution_id!: string;
   public assigned_at?: Date;
   public remarks?: string;
+  public media?: any;
   public readonly created_at!: Date;
   public readonly updated_at!: Date;
 
@@ -77,6 +79,14 @@ Incident.init({
       key: 'id',
     }
   },
+  submitted_by_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: User,
+      key: 'id',
+    }
+  },
   assignee_id: {
     type: DataTypes.UUID,
     allowNull: true,
@@ -100,6 +110,11 @@ Incident.init({
   remarks: {
     type: DataTypes.TEXT,
     allowNull: true,
+  },
+  media: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    defaultValue: []
   }
 }, {
   sequelize,

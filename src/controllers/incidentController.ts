@@ -8,7 +8,7 @@ import { sendSMS } from '../lib/sms';
 
 export const createIncident = async (req: AuthRequest, res: Response) => {
   try {
-    const { title, description, type, priority, lat, lng, isAnonymous, locationName } = req.body;
+    const { title, description, type, priority, lat, lng, isAnonymous, locationName, media } = req.body;
     
     // Use user's institution from token if logged in, otherwise expect it in body (anonymous)
     const institutionId = req.user?.institutionId || req.body.institutionId;
@@ -27,7 +27,9 @@ export const createIncident = async (req: AuthRequest, res: Response) => {
       location_lng: lng,
       is_anonymous: isAnonymous || false,
       reporter_id: isAnonymous ? null : req.user?.id,
+      submitted_by_id: req.user?.id, // always store the submitter for "My Reports" lookup
       institution_id: institutionId,
+      media: Array.isArray(media) ? media : [],
       status: 'PENDING'
     });
 
@@ -630,8 +632,15 @@ export const getStudentReports = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Authentication required' });
     }
 
+    // Use submitted_by_id (always set) so we also get anonymous reports the student filed
+    // Fall back to reporter_id for legacy reports created before submitted_by_id was added
     const reports = await Incident.findAll({
-      where: { reporter_id: userId },
+      where: {
+        [Op.or]: [
+          { submitted_by_id: userId },
+          { reporter_id: userId }
+        ]
+      },
       include: [
         { model: User, as: 'assignee', attributes: ['first_name', 'last_name'] }
       ],
