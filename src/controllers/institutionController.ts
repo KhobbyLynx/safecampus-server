@@ -17,18 +17,23 @@ export const getAllInstitutions = async (req: Request, res: Response) => {
 };
 
 export const createInstitution = async (req: Request, res: Response) => {
+  const reqStart = Date.now();
+  console.log(`[${new Date().toISOString()}] [InstitutionController] createInstitution called.`);
   try {
     const { name, domain, logoUrl, center_lat, center_lng, zoom_level, boundary, hotspots, density } = req.body;
 
     if (!boundary || !Array.isArray(boundary) || boundary.length < 3) {
+      console.warn(`[${new Date().toISOString()}] [InstitutionController] createInstitution failed: Invalid boundary`);
       return res.status(400).json({ message: 'Campus perimeter boundary (minimum 3 points) is required.' });
     }
     
     if (!hotspots || !Array.isArray(hotspots) || hotspots.length === 0) {
+      console.warn(`[${new Date().toISOString()}] [InstitutionController] createInstitution failed: No hotspots provided`);
       return res.status(400).json({ message: 'At least one campus landmark is required.' });
     }
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    console.log(`[${new Date().toISOString()}] [InstitutionController] Creating institution DB record for: "${name}"`);
 
     const institution = await Institution.create({
       name,
@@ -41,6 +46,7 @@ export const createInstitution = async (req: Request, res: Response) => {
       boundary,
       config: { density: density || 'Standard' }
     });
+    console.log(`[${new Date().toISOString()}] [InstitutionController] Institution DB record created with ID: ${institution.id}. Inserting ${hotspots.length} hotspots...`);
 
     if (hotspots && Array.isArray(hotspots)) {
       for (const h of hotspots) {
@@ -55,6 +61,7 @@ export const createInstitution = async (req: Request, res: Response) => {
           types: Array.isArray(h.types) ? h.types.join(', ') : (h.types || '')
         });
       }
+      console.log(`[${new Date().toISOString()}] [InstitutionController] Successfully inserted ${hotspots.length} hotspots.`);
     }
 
     // Notify Super Admins
@@ -68,22 +75,27 @@ export const createInstitution = async (req: Request, res: Response) => {
         data: { institutionId: institution.id }
       });
     } catch (e) {
-      console.warn('Socket not initialized, skipping super-admin notification');
+      console.warn(`[${new Date().toISOString()}] [InstitutionController] Socket not initialized, skipping super-admin notification`);
     }
 
+    console.log(`[${new Date().toISOString()}] [InstitutionController] createInstitution completed successfully in ${Date.now() - reqStart}ms.`);
     res.status(201).json(institution);
   } catch (error: any) {
+    console.error(`[${new Date().toISOString()}] [InstitutionController] Error creating institution:`, error);
     res.status(500).json({ message: error.message });
   }
 };
 
 export const getInstitutionHotspots = async (req: Request, res: Response) => {
+  const reqStart = Date.now();
   try {
     const { id } = req.params;
+    console.log(`[${new Date().toISOString()}] [InstitutionController] getInstitutionHotspots called for institution ID: ${id}`);
     const authReq = req as any;
     
     // Only allow authenticated users to access hotspots of their own institution
     if (authReq.user && authReq.user.institutionId !== id) {
+      console.warn(`[${new Date().toISOString()}] [InstitutionController] getInstitutionHotspots denied access for user ${authReq.user.id}`);
       return res.status(403).json({ message: 'Access denied to another institution\'s data' });
     }
     
@@ -96,8 +108,10 @@ export const getInstitutionHotspots = async (req: Request, res: Response) => {
       types: h.types.split(',').map((t: string) => t.trim())
     }));
     
+    console.log(`[${new Date().toISOString()}] [InstitutionController] Returning ${formatted.length} hotspots in ${Date.now() - reqStart}ms.`);
     res.json(formatted);
   } catch (error: any) {
+    console.error(`[${new Date().toISOString()}] [InstitutionController] Error fetching hotspots:`, error);
     res.status(500).json({ message: error.message });
   }
 };

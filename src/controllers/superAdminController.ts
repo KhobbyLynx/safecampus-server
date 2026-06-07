@@ -178,13 +178,17 @@ export const deleteInstitution = async (req: Request, res: Response) => {
     // 3. Delete associated Alerts
     await Alert.destroy({ where: { institution_id: id } });
     
-    // 4. Delete associated Emergency Contacts
-    await EmergencyContact.destroy({ where: { institution_id: id } });
-    
-    // 5. Delete associated Buddies (since they are tied to users of the institution)
+    // Get all users for this institution
     const institutionUsers = await User.findAll({ where: { institution_id: id }, attributes: ['id'] });
     const userIds = institutionUsers.map(u => u.id);
-    await Buddy.destroy({ where: { [Op.or]: [{ user_id: userIds }, { buddy_id: userIds }] } });
+
+    // 4. Delete associated Emergency Contacts
+    if (userIds.length > 0) {
+      await EmergencyContact.destroy({ where: { user_id: userIds } });
+      
+      // 5. Delete associated Buddies (since they are tied to users of the institution)
+      await Buddy.destroy({ where: { [Op.or]: [{ user_id: userIds }, { buddy_id: userIds }] } });
+    }
     
     // 6. Delete associated Users
     await User.destroy({ where: { institution_id: id } });
