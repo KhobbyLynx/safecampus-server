@@ -1,49 +1,84 @@
 import { Router } from 'express';
 import multer from 'multer';
-import path from 'path';
-import crypto from 'crypto';
+import { v2 as cloudinary } from 'cloudinary';
+import { Readable } from 'stream';
 
 const router = Router();
 
-// Configure storage
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads'));
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = crypto.randomUUID();
-    const ext = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${ext}`);
-  }
+// Cloudinary is configured via environment variables:
+// CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configure upload
+// Use memory storage — we stream buffer directly to Cloudinary
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm', 'video/quicktime'];
-    if (allowedTypes.includes(file.mimetype)) {
+    const allowed = [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'video/mp4',
+      'video/webm',
+      'video/quicktime',
+    ];
+    if (allowed.includes(file.mimetype)) {
       cb(null, true);
     } else {
       cb(new Error('Invalid file type. Only JPG, PNG, WEBP, MP4, WEBM, and MOV are allowed.'));
     }
-  }
+  },
 });
 
-router.post('/', upload.array('files', 3), (req: any, res: any) => {
+/**
+ * Upload a buffer to Cloudinary and return the public_id.
+ */
+function uploadToCloudinary(
+  buffer: Buffer,
+  mimetype: string,
+  folder = 'safecampus/incidents'
+): Promise<string> {
+  const resourceType = mimetype.startsWith('video/') ? 'video' : 'image';
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder, resource_type: resourceType },
+      (error, result) => {
+        if (error || !result) return reject(error ?? new Error('Upload failed'));
+        resolve(result.public_id);
+      }
+    );
+
+    const readable = new Readable();
+    readable.push(buffer);
+    readable.push(null);
+    readable.pipe(uploadStream);
+  });
+}
+
+router.post('/', upload.array('files', 3), async (req: any, res: any) => {
   try {
-    if (!req.files || !Array.isArray(req.files)) {
+    if (!req.files || !Array.isArray(req.files) || req.files.length === 0) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
-    const fileUrls = req.files.map((file: any) => `/uploads/${file.filename}`);
-    
-    res.json({ urls: fileUrls });
+    const publicIds = await Promise.all(
+      req.files.map((file: any) =>
+        uploadToCloudinary(file.buffer, file.mimetype)
+      )
+    );
+
+    // Return the public_ids — the frontend builds the full CDN URL from these
+    res.json({ urls: publicIds });
   } catch (error: any) {
-    res.status(500).json({ message: error.message });
+    console.error('[Upload] Cloudinary error:', error);
+    res.status(500).json({ message: error.message || 'Upload failed' });
   }
 });
 
