@@ -33,13 +33,13 @@ const upload = multer({
   }
 });
 
-router.post('/', upload.array('files', 3), (req, res) => {
+router.post('/', upload.array('files', 3), (req: any, res: any) => {
   try {
     if (!req.files || !Array.isArray(req.files)) {
       return res.status(400).json({ message: 'No files uploaded' });
     }
 
-    const fileUrls = req.files.map(file => `/uploads/${file.filename}`);
+    const fileUrls = req.files.map((file: any) => `/uploads/${file.filename}`);
     
     res.json({ urls: fileUrls });
   } catch (error: any) {
