@@ -69,9 +69,15 @@ router.post('/', upload.array('files', 3), async (req: any, res: any) => {
     }
 
     const publicIds = await Promise.all(
-      req.files.map((file: any) =>
-        uploadToCloudinary(file.buffer, file.mimetype)
-      )
+      req.files.map(async (file: any) => {
+        const id = await uploadToCloudinary(file.buffer, file.mimetype);
+        if (file.mimetype.startsWith('video/')) {
+          return `${id}.mp4`;
+        }
+        if (file.mimetype === 'image/png') return `${id}.png`;
+        if (file.mimetype === 'image/webp') return `${id}.webp`;
+        return `${id}.jpg`;
+      })
     );
 
     // Return the public_ids — the frontend builds the full CDN URL from these
