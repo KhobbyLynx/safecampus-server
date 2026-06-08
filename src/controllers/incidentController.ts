@@ -33,8 +33,17 @@ export const createIncident = async (req: AuthRequest, res: Response) => {
       status: 'PENDING'
     });
 
-    // Emit live alert to the institution's security room
+    // Emit live alert to the institution's security & admin room
     emitToInstitution(institutionId, 'new-incident', incident);
+
+    // Also emit a structured notification for the navbar notification center
+    emitToInstitution(institutionId, 'notification', {
+      type: 'NEW_INCIDENT',
+      title: `New Incident: ${title || type}`,
+      message: `A ${priority?.toLowerCase() || 'new'} priority incident has been reported.`,
+      description: description?.substring(0, 100),
+      data: { incidentId: incident.get('id') }
+    });
 
     // For high priority incidents, send email notifications
     if (priority === 'HIGH' || priority === 'CRITICAL') {
@@ -101,6 +110,16 @@ export const createSOSIncident = async (req: AuthRequest, res: Response) => {
     emitToInstitution(institutionId, 'sos-alert', {
       ...incident.toJSON(),
       reporter_name: reporterName
+    });
+
+    // Also emit structured notification for navbar — all users in institution
+    emitToInstitution(institutionId, 'notification', {
+      type: 'SOS_ALERT',
+      title: '🚨 EMERGENCY SOS',
+      message: `SOS triggered by ${reporterName}`,
+      description: `Location: ${locationName || 'Unknown'}. Immediate assistance required.`,
+      priority: 'CRITICAL',
+      data: { incidentId: incident.get('id') }
     });
 
     // Notify all active security personnel and Emergency Contacts
